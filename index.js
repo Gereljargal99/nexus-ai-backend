@@ -9,15 +9,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// HEALTH CHECK
+// HEALTH CHECK (what you see now)
 app.get("/", (req, res) => {
-  res.json({
-    status: "NEXUS AI BACKEND ACTIVE",
-    time: new Date().toISOString()
-  });
+  res.json({ status: "NEXUS BACKEND LIVE" });
 });
 
-// MAIN SIGNAL API
+// MAIN AI SIGNAL ENDPOINT
 app.post("/api/signal", async (req, res) => {
   try {
     const { pair, tf, risk, strategy, price } = req.body;
@@ -25,25 +22,23 @@ app.post("/api/signal", async (req, res) => {
     const prompt = `
 You are a professional forex trading AI.
 
-Generate a structured trading signal.
-
-Pair: ${pair}
-Timeframe: ${tf}
-Risk: ${risk}
-Strategy: ${strategy}
-Current Price: ${price}
+PAIR: ${pair}
+TF: ${tf}
+RISK: ${risk}
+STRATEGY: ${strategy}
+PRICE: ${price}
 
 Return ONLY JSON:
 {
   "direction": "BUY or SELL",
-  "entry": "number",
-  "tp1": "number",
-  "tp2": "number",
-  "tp3": "number",
-  "sl": "number",
+  "entry": "",
+  "tp1": "",
+  "tp2": "",
+  "tp3": "",
+  "sl": "",
   "confidence": 0-100,
   "rr_ratio": "1:x",
-  "analysis": "short professional explanation"
+  "analysis": "short explanation"
 }
 `;
 
@@ -65,21 +60,13 @@ Return ONLY JSON:
 
     const text = response.data.content[0].text;
 
-    let json;
-    try {
-      json = JSON.parse(text);
-    } catch (e) {
-      return res.status(500).json({
-        error: "Invalid JSON from AI",
-        raw: text
-      });
-    }
+    const json = JSON.parse(text);
 
     res.json(json);
 
   } catch (err) {
     res.status(500).json({
-      error: "Backend error",
+      error: "AI error",
       message: err.message
     });
   }
@@ -87,5 +74,5 @@ Return ONLY JSON:
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log("NEXUS BACKEND RUNNING ON PORT", PORT);
+  console.log("NEXUS BACKEND RUNNING ON", PORT);
 });
