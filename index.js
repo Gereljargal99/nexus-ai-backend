@@ -1,78 +1,105 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import axios from "axios";
-
-dotenv.config();
+const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
+
+// ======================
+// MIDDLEWARE
+// ======================
 app.use(cors());
 app.use(express.json());
 
-// HEALTH CHECK (what you see now)
-app.get("/", (req, res) => {
-  res.json({ status: "NEXUS BACKEND LIVE" });
+// Optional: request logger (useful in production)
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
 });
 
-// MAIN AI SIGNAL ENDPOINT
-app.post("/api/signal", async (req, res) => {
+// ======================
+// HEALTH CHECK ROUTE
+// ======================
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "NEXUS AI BACKEND RUNNING 🚀",
+    time: new Date().toISOString()
+  });
+});
+
+// ======================
+// MAIN API ROUTE (CHAT)
+// ======================
+app.post("/api/chat", async (req, res) => {
   try {
-    const { pair, tf, risk, strategy, price } = req.body;
+    const { message } = req.body;
 
-    const prompt = `
-You are a professional forex trading AI.
+    // validation
+    if (!message || message.trim() === "") {
+      return res.status(400).json({
+        status: "error",
+        message: "Message is required"
+      });
+    }
 
-PAIR: ${pair}
-TF: ${tf}
-RISK: ${risk}
-STRATEGY: ${strategy}
-PRICE: ${price}
+    // ======================
+    // SIMPLE AI LOGIC (PLACEHOLDER)
+    // Later you can connect OpenAI here
+    // ======================
+    const reply = generateBasicResponse(message);
 
-Return ONLY JSON:
-{
-  "direction": "BUY or SELL",
-  "entry": "",
-  "tp1": "",
-  "tp2": "",
-  "tp3": "",
-  "sl": "",
-  "confidence": 0-100,
-  "rr_ratio": "1:x",
-  "analysis": "short explanation"
-}
-`;
+    return res.status(200).json({
+      status: "success",
+      input: message,
+      reply: reply
+    });
 
-    const response = await axios.post(
-      "https://api.anthropic.com/v1/messages",
-      {
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 800,
-        messages: [{ role: "user", content: prompt }]
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": process.env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01"
-        }
-      }
-    );
+  } catch (error) {
+    console.error("Chat error:", error);
 
-    const text = response.data.content[0].text;
-
-    const json = JSON.parse(text);
-
-    res.json(json);
-
-  } catch (err) {
-    res.status(500).json({
-      error: "AI error",
-      message: err.message
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error"
     });
   }
 });
 
-const PORT = process.env.PORT || 10000;
+// ======================
+// SIMPLE AI FUNCTION (TEMP)
+// ======================
+function generateBasicResponse(text) {
+  const lower = text.toLowerCase();
+
+  if (lower.includes("hello") || lower.includes("hi")) {
+    return "Hello 👋 How can I help you today?";
+  }
+
+  if (lower.includes("who are you")) {
+    return "I am NEXUS AI, your assistant system.";
+  }
+
+  if (lower.includes("help")) {
+    return "Sure — tell me what you need help with.";
+  }
+
+  return "I understood: " + text;
+}
+
+// ======================
+// 404 HANDLER
+// ======================
+app.use((req, res) => {
+  res.status(404).json({
+    status: "error",
+    message: "Route not found"
+  });
+});
+
+// ======================
+// SERVER START
+// ======================
+const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log("NEXUS BACKEND RUNNING ON", PORT);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
